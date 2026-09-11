@@ -19,13 +19,19 @@ from core.config import COOKIE_FILE_PATH, settings
 from core.services.ffmpeg_setup import get_ffmpeg_path
 from core.utils.validators import sanitize_filename
 
-
 def _with_cookies(ydl_opts: dict) -> dict:
-    """Attach the cookie file to yt-dlp options if one is configured.
+    """Attach the cookie file to yt-dlp options if one is configured, and
+    force the 'tv' YouTube client. Per yt-dlp's PO Token Guide, the tv
+    client doesn't require a PO Token as long as valid cookies are passed
+    (its formats are otherwise DRM-restricted) — this avoids needing a
+    full PO Token provider plugin for now.
     Works around YouTube's bot-check, which triggers far more often on
     cloud/datacenter IPs (like Vercel's) than on residential IPs."""
     if COOKIE_FILE_PATH:
         ydl_opts["cookiefile"] = COOKIE_FILE_PATH
+        ydl_opts.setdefault("extractor_args", {})["youtube"] = {
+            "player_client": ["tv"],
+        }
     return ydl_opts
 
 QUALITY_HEIGHT_MAP = {
