@@ -9,16 +9,24 @@ That's deliberate — see the README for why the async job-queue pattern
 doesn't fit a serverless deployment target well, and how request duration
 limits factor into MAX_VIDEO_HEIGHT.
 """
-
 import os
 import uuid
 from typing import Literal
 
 import yt_dlp
 
-from core.config import settings
+from core.config import COOKIE_FILE_PATH, settings
 from core.services.ffmpeg_setup import get_ffmpeg_path
 from core.utils.validators import sanitize_filename
+
+
+def _with_cookies(ydl_opts: dict) -> dict:
+    """Attach the cookie file to yt-dlp options if one is configured.
+    Works around YouTube's bot-check, which triggers far more often on
+    cloud/datacenter IPs (like Vercel's) than on residential IPs."""
+    if COOKIE_FILE_PATH:
+        ydl_opts["cookiefile"] = COOKIE_FILE_PATH
+    return ydl_opts
 
 QUALITY_HEIGHT_MAP = {
     "360p": 360,
@@ -29,12 +37,12 @@ QUALITY_HEIGHT_MAP = {
 
 
 def resolve_formats(url: str) -> dict:
-    ydl_opts = {
+    ydl_opts = _with_cookies({
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
-    }
+    })
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
@@ -76,7 +84,7 @@ def download_media(
     if mode == "audio":
         expected_ext = "mp3"
         media_type = "audio/mpeg"
-        ydl_opts = {
+        ydl_opts = _with_cookies({
             "format": "bestaudio/best",
             "outtmpl": out_template,
             "ffmpeg_location": ffmpeg_path,
@@ -90,7 +98,7 @@ def download_media(
             "noplaylist": True,
             "quiet": True,
             "no_warnings": True,
-        }
+        })
     else:
         height_cap = QUALITY_HEIGHT_MAP.get(quality, settings.MAX_VIDEO_HEIGHT)
         # Never let a client request above our server-side ceiling, even if
@@ -102,7 +110,7 @@ def download_media(
         fmt = f"bestvideo[height<={height_cap}]+bestaudio/best[height<={height_cap}]"
         expected_ext = "mp4"
         media_type = "video/mp4"
-        ydl_opts = {
+        ydl_opts = _with_cookies({
             "format": fmt,
             "outtmpl": out_template,
             "ffmpeg_location": ffmpeg_path,
@@ -110,7 +118,7 @@ def download_media(
             "noplaylist": True,
             "quiet": True,
             "no_warnings": True,
-        }
+        })
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
