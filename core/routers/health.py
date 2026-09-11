@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 import os
-
+import shutil
 import yt_dlp
 
 from core.config import COOKIE_FILE_PATH, settings
@@ -38,4 +38,5 @@ def debug_cookies():
         "cookie_file_first_line": first_line,
         "cookie_line_count": cookie_line_count,
         "yt_dlp_version": yt_dlp.version.__version__,
+        "deno_found_on_path": shutil.which("deno") is not None,
     }
