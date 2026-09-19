@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.routers import download, health, resolve
+from core.routers import download, health, resolve, stats
 
 app = FastAPI(
     title="Utooload Backend",
@@ -19,9 +19,10 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(resolve.router, prefix="/api")
 app.include_router(download.router, prefix="/api")
+app.include_router(stats.router, prefix="/api")
+app.include_router(stats.router)
 
 
 @app.get("/")
 def root():
     return {"message": "Utooload's backend is up!!"}
-

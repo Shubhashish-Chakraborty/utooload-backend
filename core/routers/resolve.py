@@ -5,6 +5,7 @@ import yt_dlp
 
 from core.schemas import ResolveRequest, ResolveResponse
 from core.services.ytdlp_service import resolve_formats
+from core.stats import increment_resolve_count
 from core.utils.validators import is_youtube_url
 
 logger = logging.getLogger("uvicorn.error")
@@ -13,6 +14,8 @@ router = APIRouter()
 
 @router.post("/resolve", response_model=ResolveResponse)
 def resolve(payload: ResolveRequest):
+    increment_resolve_count()
+
     url = str(payload.url)
 
     if not is_youtube_url(url):

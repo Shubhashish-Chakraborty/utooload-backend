@@ -7,6 +7,7 @@ import yt_dlp
 
 from core.schemas import DownloadRequest
 from core.services.ytdlp_service import download_media
+from core.stats import increment_number_of_downloads
 from core.utils.validators import is_youtube_url
 
 router = APIRouter()
@@ -24,6 +25,8 @@ def _cleanup(path: str) -> None:
 
 @router.post("/download")
 def download(payload: DownloadRequest):
+    increment_number_of_downloads()
+
     url = str(payload.url)
 
     if not is_youtube_url(url):
